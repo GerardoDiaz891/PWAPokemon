@@ -5,11 +5,28 @@ function App() {
   const [pokemons, setPokemons] = useState([])
 
   useEffect(() => {
-    fetch('https://pokeapi.co/api/v2/pokemon?limit=20')
+    const url = 'https://pokeapi.co/api/v2/pokemon?limit=20';
+    fetch(url)
       .then(response => response.json())
       .then(data => setPokemons(data.results))
-      .catch(error => console.error('Error fetching Pokémon data:', error))
-  }, [])
+      .catch(async error => {
+        // Si falla fetch, intentar leer del cache (modo offline)
+        if ('caches' in window) {
+          try {
+            const cache = await window.caches.open('poke-pwa-cache-v2');
+            const cachedResponse = await cache.match(url);
+            if (cachedResponse) {
+              const data = await cachedResponse.json();
+              setPokemons(data.results);
+              return;
+            }
+          } catch (e) {
+            // Ignorar errores de cache
+          }
+        }
+        console.error('Error fetching Pokémon data:', error);
+      });
+  }, []);
 
   return (
     <>
